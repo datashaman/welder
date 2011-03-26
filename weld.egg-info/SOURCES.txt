@@ -1,0 +1,10 @@
+setup.cfg
+setup.py
+test/test.py
+weld/__init__.py
+weld.egg-info/PKG-INFO
+weld.egg-info/SOURCES.txt
+weld.egg-info/dependency_links.txt
+weld.egg-info/entry_points.txt
+weld.egg-info/not-zip-safe
+weld.egg-info/top_level.txt
