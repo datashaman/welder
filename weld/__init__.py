@@ -4,7 +4,6 @@ import inspect
 from lxml import etree
 from copy import deepcopy
 import collections, logging.config
-from pyquery import PyQuery
 
 logging.config.fileConfig('logging.ini')
 log = logging.getLogger(__name__)
@@ -91,12 +90,12 @@ def debuggable(name, func=None):
 def weld(DOMTarget, data, pconfig={}):
     assert isinstance(DOMTarget, etree._Element)
 
-    def _check_args(parent, element):
+    def check_args(parent, element):
         assert parent is None or isinstance(parent, etree._Element)
         assert isinstance(element, etree._Element)
 
     def siblings(parent, element, key, value):
-        _check_args(parent, element)
+        check_args(parent, element)
 
         siblings = parent.getchildren()
         cs = len(siblings)
@@ -110,7 +109,7 @@ def weld(DOMTarget, data, pconfig={}):
             sibling = siblings[cs]
 
             if sibling is element:
-                if debug:
+                if config.debug:
                     d('remove', element)
 
                 index = parent.index(element)
@@ -128,13 +127,13 @@ def weld(DOMTarget, data, pconfig={}):
                         break
 
                 if match:
-                    if debug:
+                    if config.debug:
                         d('remove', sibling)
 
                     parent.remove(sibling)
 
     def traverse(parent, element, key, value):
-        _check_args(parent, element)
+        check_args(parent, element)
 
         template = element
         templateParent = element.getparent()
@@ -149,7 +148,7 @@ def weld(DOMTarget, data, pconfig={}):
                 templateParent = w.parent
 
             for index, obj in enumerate(value):
-                if debug:
+                if config.debug:
                     d('clone', element)
 
                 target = deepcopy(element)
@@ -163,16 +162,16 @@ def weld(DOMTarget, data, pconfig={}):
         else:
             for key, obj in value.items():
                 target = ops.match(template, element, key, obj)
-                if target is not None:
+                if target not in (None, False):
                     ops.traverse(template, target, key, obj)
 
     def insert(parent, element, key=None, value=None):
-        _check_args(parent, element)
+        check_args(parent, element)
 
         if has_weld(element):
             w = get_weld(element)
             if hasattr(w, 'insertBefore') and w.insertBefore > 0:
-                if debug:
+                if config.debug:
                     log.debug('Insert %s before element %s in %s' %
                         (e(element),
                             w.insertBefore,
@@ -184,7 +183,7 @@ def weld(DOMTarget, data, pconfig={}):
             parent.append(element)
 
     def element_type(parent, element, key, value):
-        _check_args(parent, element)
+        check_args(parent, element)
 
         if isinstance(element, etree._Element):
             node_name = element.tag
@@ -197,17 +196,17 @@ def weld(DOMTarget, data, pconfig={}):
                 return 'image'
 
     def map(parent, element, key, value):
-        _check_args(parent, element)
+        check_args(parent, element)
 
         return True
 
     def set(parent, element, key, value):
-        _check_args(parent, element)
+        check_args(parent, element)
 
         if ops.map(parent, element, key, value) is False:
             return False
 
-        if debug:
+        if config.debug:
             log.debug('- SET: element:%s, key:%s, value:%s' % (element.tag, key, value))
 
         type = ops.element_type(parent, element, key, value)
@@ -230,16 +229,18 @@ def weld(DOMTarget, data, pconfig={}):
         return True
 
     def match(parent, element, key, value):
-        _check_args(parent, element)
+        check_args(parent, element)
 
-        if 'alias' in config:
-            if config.alias and key in config.alias:
-                if inspect.isfunction(config.alias[key]):
-                    key = config.alias[key](parent, element, key, value) or key
-                elif config.alias[key] is False:
-                    return False
-                else:
-                    key = config.alias[key]
+        if key in config.alias:
+            if config.alias[key] is False:
+                return False
+            elif inspect.isfunction(config.alias[key]):
+                func = config.alias[key]
+                result = func(parent, element, key, value)
+                if result is not None:
+                    key = result
+            else:
+                key = config.alias[key]
 
         if isinstance(key, etree._Element):
             return key
@@ -250,12 +251,10 @@ def weld(DOMTarget, data, pconfig={}):
             if result:
                 return result[0]
 
-    parent = DOMTarget.getparent()
-
     config = AttrDict(dict(alias={}, debug=False, insert=False))
     config.update(pconfig)
 
-    debug = config['debug']
+    parent = DOMTarget.getparent()
 
     ops = AttrDict(dict(filter(lambda index: inspect.isfunction(index[1]),\
         locals().items())))
@@ -264,14 +263,14 @@ def weld(DOMTarget, data, pconfig={}):
         if name in config and config[name]:
             func = config[name]
 
-        if debug:
+        if config.debug:
             func = debuggable(name, func)
 
         ops[name] = func
 
     ops.traverse(None, DOMTarget, None, data)
 
-    if debug:
+    if config.debug:
         if parent:
             debug = parent.html()
         else:
@@ -279,8 +278,8 @@ def weld(DOMTarget, data, pconfig={}):
 
         log.debug(debug)
 
-def pyquery_weld(data, config={}):
-    weld(this[0], data, config)
-    return this
+#def pyquery_weld(data, config={}):
+    #weld(this[0], data, config)
+    #return this
 
-PyQuery.fn.weld = pyquery_weld
+#PyQuery.fn.weld = pyquery_weld

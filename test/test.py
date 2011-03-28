@@ -9,11 +9,6 @@ data = (
     dict(name='tmpvar', title='code pimp'),
 )
 
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
 def get_template(name):
     filename = os.path.join(os.path.dirname(__file__), 'test.html')
     file = open(filename, 'rb')
@@ -51,12 +46,12 @@ def test_object_literal():
     "Test 2: Assign data to elements using an object literal that has one level of depth"
     template = get_template('singular')
 
-    data = AttrDict(key='someKey', value='someValue', icon='/path/to/image.png')
+    data = dict(key='someKey', value='someValue', icon='/path/to/image.png')
     weld(template[0], data)
 
-    eq_(template('.key').text(), data.key)
-    eq_(template('.icon').attr('src'), data.icon)
-    eq_(template(':input[@name="value"]').val(), data.value)
+    eq_(template('.key').text(), data['key'])
+    eq_(template('.icon').attr('src'), data['icon'])
+    eq_(template(':input[@name="value"]').val(), data['value'])
 
 def test_alias():
     """Test 3: Generate markup based on an element using the alias parameter to explicitly correlate data-keys and elements"""
@@ -150,9 +145,9 @@ def test_array_of_arrays():
     """Test 9: Create markup from an object literal that has one dimension that contains an array of objects with one dimension"""
     template = get_template('array-of-arrays')
 
-    data = AttrDict(person=(
-        AttrDict(name='John', job=('guru', 'monkey', 'tester')),
-        AttrDict(name='Bob', job=('supervise', 'yell')),
+    data = dict(person=(
+        dict(name='John', job=('guru', 'monkey', 'tester')),
+        dict(name='Bob', job=('supervise', 'yell')),
     ), bar='hello')
 
     def alternative_map(p, e, k, v):
@@ -178,11 +173,11 @@ def test_form_elements():
     """Test 10: Create markup using form elements as the template"""
     template = get_template('form')
 
-    data = AttrDict(email='tmpvar@gmail.com')
+    data = dict(email='tmpvar@gmail.com')
 
     weld(template('form')[0], data)
 
-    eq_(template(':input[name=email]').val(), data.email)
+    eq_(template(':input[name=email]').val(), data['email'])
 
 def test_false_map():
     """Test 11: Returning false from map stops the current branch from being visited"""
@@ -191,8 +186,8 @@ def test_false_map():
     template('#temp').append(template)
 
     weld(template[0], [
-        AttrDict(where='world')
-        ], AttrDict(map=lambda p, e, k, v: False))
+        dict(where='world')
+        ], dict(map=lambda p, e, k, v: False))
 
     eq_(template('.where').text(), 'do not touch')
 
@@ -210,3 +205,41 @@ def test_external():
     eq_(template('li.number:nth-child(2) span').text(), 'one')
     eq_(template('li.number:nth-child(3) span').text(), 'two')
     eq_(template('li.number').text(), 'zero one two')
+
+def test_internal():
+    """Test 13: Use a NodeList from the current document and weld it to another area in the same document"""
+    template = get_template('source-and-dest')
+    sources = template('#data span')
+
+    weld(template('li.number')[0], sources)
+
+    eq_(template('li.number').length, 3)
+    eq_(template('li.number:nth-child(1) span').text(), 'zero')
+    eq_(template('li.number:nth-child(2) span').text(), 'one')
+    eq_(template('li.number:nth-child(3) span').text(), 'two')
+    eq_(template('li.number').text(), 'zero one two')
+
+
+def test_alias_element():
+    """Test 14: Alias may return a dom element which is used instead of doing an explicit match"""
+    template = get_template('contacts-alias-opt-out')
+
+    def alternate_name(p, e, k, v):
+        eq_(k, 'name')
+        return template(e).find('.foo')[0]
+
+    weld(template('.contact')[0], data, dict(
+        alias=dict(name=alternate_name)
+    ))
+
+    check_contacts(template)
+
+def test_opt_out():
+    """Test 15: Alias may opt out of rendering a data-key/element match because of a false value"""
+    template = get_template('contacts-opt-out')
+
+    weld(template('.contact')[0], data, dict(alias=dict(name=False)))
+
+    eq_(template('.contact').length, 2)
+    eq_(template('.contact:nth-child(1) .foo').text(), 'My Name')
+    eq_(template('.contact:nth-child(2) .foo').text(), 'My Name')
