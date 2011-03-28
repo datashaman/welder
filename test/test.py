@@ -168,3 +168,8 @@ def test_array_of_arrays():
 
     eq_(template('.person.bar').text(), 'hello')
     eq_(template('.person.bar').length, 1)
+
+    eq_(template('.person.submit').text(), 'Sidecase #2: additional classes (no data equiv)')
+    eq_(template('.person.submit').length, 1)
+
+    eq_(template('.pre-processed').length, 8)
