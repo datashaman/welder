@@ -19,6 +19,9 @@ setup(name='weld',
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
+          'lxml',
+          'pyquery',
+          'nose',
       ],
       entry_points="""
       # -*- Entry points: -*-
