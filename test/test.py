@@ -1,5 +1,5 @@
 import os
-from lxml import etree, cssselect
+from lxml import etree, cssselect, html
 from pyquery import PyQuery
 from weld import weld
 from nose.tools import *
@@ -173,3 +173,40 @@ def test_array_of_arrays():
     eq_(template('.person.submit').length, 1)
 
     eq_(template('.pre-processed').length, 8)
+
+def test_form_elements():
+    """Test 10: Create markup using form elements as the template"""
+    template = get_template('form')
+
+    data = AttrDict(email='tmpvar@gmail.com')
+
+    weld(template('form')[0], data)
+
+    eq_(template(':input[name=email]').val(), data.email)
+
+def test_false_map():
+    """Test 11: Returning false from map stops the current branch from being visited"""
+
+    template = PyQuery('<ul class="list"><li class="item">hello <span class="where">do not touch</span></li></ul>')
+    template('#temp').append(template)
+
+    weld(template[0], [
+        AttrDict(where='world')
+        ], AttrDict(map=lambda p, e, k, v: False))
+
+    eq_(template('.where').text(), 'do not touch')
+
+def test_external():
+    """Test 12: Use a NodeList from another template and weld it into the target document"""
+    source_template = get_template('source-and-dest #data')
+    template = get_template('source-and-dest #dest')
+
+    sources = source_template('span')
+
+    weld(template('li.number')[0], sources)
+
+    eq_(template('li.number').length, 3)
+    eq_(template('li.number:nth-child(1) span').text(), 'zero')
+    eq_(template('li.number:nth-child(2) span').text(), 'one')
+    eq_(template('li.number:nth-child(3) span').text(), 'two')
+    eq_(template('li.number').text(), 'zero one two')

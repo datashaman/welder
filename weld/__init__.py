@@ -9,9 +9,11 @@ from pyquery import PyQuery
 logging.config.fileConfig('logging.ini')
 log = logging.getLogger(__name__)
 
+e = lambda x: etree.tostring(x)
+
 def d_label(action, element):
     return '%s - element: %s, class: %s, id: %s' %\
-        (action.upper(), colorize(etree.tostring(element)),\
+        (action.upper(), colorize(e(element)),\
                 colorize(element.get('class')), colorize(element.get('id')))
 
 def d(action, element):
@@ -23,6 +25,18 @@ class AttrDict(dict):
         self.__dict__ = self
 
 depth = 0
+welds = {}
+
+def has_weld(element):
+    return id(element) in welds
+
+def get_weld(element):
+    return welds.get(id(element), None)
+
+def set_weld(element, w):
+    global welds
+    welds[id(element)] = w
+    return w
 
 color = AttrDict(dict(gray='\033[37m', darkgray='\033[40;30m', red='\033[31m',\
     green='\033[32m', yellow='\033[33m', lightblue='\033[1;34m',\
@@ -54,8 +68,8 @@ def debuggable(name, func=None):
 
         log.debug('%s%s┌ %s - parent:%s, element:%s, key:%s, value:%s'\
                 % (pad(), color.gray, label,\
-                    colorize(parent is not None and etree.tostring(parent) or 'None'),\
-                    colorize(etree.tostring(element)),\
+                    colorize(parent is not None and e(parent) or 'None'),\
+                    colorize(e(element)),\
                     colorize(key), colorize(value)))
 
         if inspect.isfunction(func):
@@ -66,7 +80,7 @@ def debuggable(name, func=None):
             else:
                 indicator = failureIndicator
 
-            log.debug('%s└ %s%s' % (pad(), etree.tostring(element), indicator))
+            log.debug('%s└ %s%s' % (pad(), e(element), indicator))
             return res
 
         depth -= 1
@@ -87,8 +101,9 @@ def weld(DOMTarget, data, pconfig={}):
         siblings = parent.getchildren()
         cs = len(siblings)
 
-        element.weld = AttrDict(parent=parent,\
-                classes=element.get('class', '').split(' '), insertBefore=None)
+        w = set_weld(element, AttrDict(parent=parent,\
+                classes=element.get('class', '').split(' '),
+                insertBefore=None))
 
         while cs:
             cs -= 1
@@ -102,13 +117,13 @@ def weld(DOMTarget, data, pconfig={}):
                 parent.remove(element)
 
                 if index < len(parent):
-                    element.weld.insertBefore = parent[index]
+                    w.insertBefore = parent[index]
             else:
                 classes = sibling.get('class', '').split(' ')
                 match = True
 
                 for _class in classes:
-                    if _class not in element.weld.classes:
+                    if _class not in w.classes:
                         match = False
                         break
 
@@ -129,18 +144,19 @@ def weld(DOMTarget, data, pconfig={}):
         elif isinstance(value, collections.Sequence) and len(value) and value[0] is not None:
             if templateParent is not None:
                 ops.siblings(templateParent, template, key, value)
-            elif None not in (template.weld, template.weld.parent):
-                templateParent = template.weld.parent
+            elif has_weld(template):
+                w = get_weld(template)
+                templateParent = w.parent
 
             for index, obj in enumerate(value):
                 if debug:
                     d('clone', element)
 
                 target = deepcopy(element)
-                target.weld = AttrDict()
+                w = set_weld(target, AttrDict())
 
-                if element.weld is not None:
-                    target.weld.update(element.weld)
+                if has_weld(element):
+                    w.update(get_weld(element))
 
                 ops.traverse(templateParent, target, index, obj)
                 ops.insert(templateParent, target)
@@ -153,14 +169,18 @@ def weld(DOMTarget, data, pconfig={}):
     def insert(parent, element, key=None, value=None):
         _check_args(parent, element)
 
-        if None not in (element.weld, element.weld.insertBefore):
-            if debug:
-                log.debug('Insert %s before element %s in %s' %
-                    (etree.tostring(element),
-                        etree.tostring(element.weld.insertBefore),
-                        etree.tostring(parent)))
-            parent.insert(parent.index(element.weld.insertBefore), element)
-        else:
+        if has_weld(element):
+            w = get_weld(element)
+            if hasattr(w, 'insertBefore') and w.insertBefore > 0:
+                if debug:
+                    log.debug('Insert %s before element %s in %s' %
+                        (e(element),
+                            w.insertBefore,
+                            e(parent)))
+                parent.insert(parent.index(w.insertBefore), element)
+                return
+
+        if None not in (parent, element):
             parent.append(element)
 
     def element_type(parent, element, key, value):
@@ -193,15 +213,13 @@ def weld(DOMTarget, data, pconfig={}):
         type = ops.element_type(parent, element, key, value)
 
         if value is not None and isinstance(value, etree._Element):
-            if element.ownerDocument != value.ownerDocument:
-                value = element.ownerDocument.importNode(value, true)
-            elif value.getparent() is not None:
-                value.getparent().removeChild(value)
+            if value.getparent() is not None:
+                value.getparent().remove(value)
 
-            while element.firstChild is not None:
-                element.removeChild(element.firstChild)
+            element[:] = []
+            element.text = ''
 
-            element.appendChild(value)
+            element.append(value)
         elif type == 'input':
             element.set('value', value)
         elif type == 'image':
