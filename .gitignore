@@ -1,0 +1,5 @@
+*.pyc
+*.ini
+
+/test/html
+/.coverage
