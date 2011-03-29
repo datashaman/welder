@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import inspect
+import inspect, types
 from lxml import etree
 from copy import deepcopy
 import collections, logging
@@ -130,32 +130,34 @@ def weld(DOMTarget, data, pconfig={}):
         template = element
         templateParent = element.getparent()
 
-        if value is None or isinstance(value, str) or isinstance(value, etree._Element):
+        if value is None or isinstance(value, types.StringTypes) or isinstance(value, etree._Element):
             ops.set(parent, element, key, value)
-        elif isinstance(value, collections.Sequence) and len(value) and value[0] is not None:
-            if templateParent is not None:
-                ops.siblings(templateParent, template, key, value)
-            elif has_weld(template):
-                w = get_weld(template)
-                templateParent = w.parent
-
-            for index, obj in enumerate(value):
-                if config.debug:
-                    d('clone', element)
-
-                target = deepcopy(element)
-                w = set_weld(target, AttrDict())
-
-                if has_weld(element):
-                    w.update(get_weld(element))
-
-                ops.traverse(templateParent, target, index, obj)
-                ops.insert(templateParent, target)
         else:
-            for key, obj in value.items():
-                target = ops.match(template, element, key, obj)
-                if target not in (None, False):
-                    ops.traverse(template, target, key, obj)
+            if isinstance(value, collections.Sequence) and len(value) > 0 and value[0] is not None:
+                if templateParent is not None:
+                    ops.siblings(templateParent, template, key, value)
+                elif has_weld(template):
+                    w = get_weld(template)
+                    templateParent = w.parent
+
+                for index, obj in enumerate(value):
+                    if config.debug:
+                        d('clone', element)
+
+                    target = deepcopy(element)
+                    w = set_weld(target, AttrDict())
+
+                    if has_weld(element):
+                        w.update(get_weld(element))
+
+                    ops.traverse(templateParent, target, index, obj)
+                    ops.insert(templateParent, target)
+            else:
+                print value, value.__class__
+                for key, obj in value.items():
+                    target = ops.match(template, element, key, obj)
+                    if target not in (None, False):
+                        ops.traverse(template, target, key, obj)
 
     def insert(parent, element, key=None, value=None):
         check_args(parent, element)
