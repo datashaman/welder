@@ -2,5 +2,9 @@
 *.ini
 
 /distribute-*.tar.gz
-/test/html
+/cover
+/bin
+/lib
+/include
+/*.egg-info
 .coverage

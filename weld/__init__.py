@@ -56,34 +56,29 @@ def colorize(val):
     else:
         return color.yellow + sval + color.gray
 
-    return sval
-
 def debuggable(name, func=None):
     label = name.upper()
 
     def new_func(parent, element, key=None, value=None):
         global depth
-        depth += 1
 
+        depth += 1
         log.debug('%s%s┌ %s - parent:%s, element:%s, key:%s, value:%s'\
                 % (pad(), color.gray, label,\
                     colorize(parent is not None and e(parent) or 'None'),\
                     colorize(e(element)),\
                     colorize(key), colorize(value)))
 
-        if inspect.isfunction(func):
-            res = func(parent, element, key, value)
-            depth -= 1
-            if res is not False:
-                indicator = successIndicator
-            else:
-                indicator = failureIndicator
-
-            log.debug('%s└ %s%s' % (pad(), e(element), indicator))
-            return res
+        res = func(parent, element, key, value)
+        if res is not False:
+            indicator = successIndicator
+        else:
+            indicator = failureIndicator
 
         depth -= 1
-        d('OPERATION NOT FOUND', label)
+        log.debug('%s└ %s%s' % (pad(), e(element), indicator))
+
+        return res
 
     return new_func
 
@@ -251,7 +246,7 @@ def weld(DOMTarget, data, pconfig={}):
             if result:
                 return result[0]
 
-    config = AttrDict(dict(alias={}, debug=False, insert=False))
+    config = AttrDict(dict(alias={}, debug=True, insert=False))
     config.update(pconfig)
 
     parent = DOMTarget.getparent()
@@ -272,7 +267,7 @@ def weld(DOMTarget, data, pconfig={}):
 
     if config.debug:
         if parent:
-            debug = parent.html()
+            debug = e(parent)
         else:
             debug = 'None'
 
