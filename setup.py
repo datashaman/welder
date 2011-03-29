@@ -22,6 +22,7 @@ setup(name='weld',
           'lxml',
           'pyquery',
           'nose',
+          'coverage'
       ],
       entry_points="""
       # -*- Entry points: -*-

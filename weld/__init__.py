@@ -238,7 +238,7 @@ def weld(DOMTarget, data, pconfig={}):
             return key
 
         if element is not None:
-            selector = "*[contains(@class, '{0}')] | *[@id='{0}'] | *[@name='{0}']".format(key)
+            selector = "descendant::*[contains(@class, '{0}')] | descendant::*[@id='{0}'] | descendant::*[@name='{0}']".format(key)
             result = element.xpath(selector)
             if result:
                 return result[0]
