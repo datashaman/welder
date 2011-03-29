@@ -153,7 +153,6 @@ def weld(DOMTarget, data, pconfig={}):
                     ops.traverse(templateParent, target, index, obj)
                     ops.insert(templateParent, target)
             else:
-                print value, value.__class__
                 for key, obj in value.items():
                     target = ops.match(template, element, key, obj)
                     if target not in (None, False):
