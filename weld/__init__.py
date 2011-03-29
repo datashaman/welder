@@ -3,9 +3,8 @@
 import inspect
 from lxml import etree
 from copy import deepcopy
-import collections, logging.config
+import collections, logging
 
-logging.config.fileConfig('logging.ini')
 log = logging.getLogger(__name__)
 
 e = lambda x: etree.tostring(x)
@@ -202,7 +201,7 @@ def weld(DOMTarget, data, pconfig={}):
         if config.debug:
             log.debug('- SET: element:%s, key:%s, value:%s' % (element.tag, key, value))
 
-        type = ops.element_type(parent, element, key, value)
+        element_type = ops.element_type(parent, element, key, value)
 
         if value is not None and isinstance(value, etree._Element):
             if value.getparent() is not None:
@@ -212,9 +211,9 @@ def weld(DOMTarget, data, pconfig={}):
             element.text = ''
 
             element.append(value)
-        elif type == 'input':
+        elif element_type == 'input':
             element.set('value', value)
-        elif type == 'image':
+        elif element_type == 'image':
             element.set('src', value)
         else:
             element.text = value
@@ -239,7 +238,7 @@ def weld(DOMTarget, data, pconfig={}):
             return key
 
         if element is not None:
-            selector = "//*[contains(@class, '{0}')] | //*[@id='{0}'] | //*[@name='{0}']".format(key)
+            selector = "*[contains(@class, '{0}')] | *[@id='{0}'] | *[@name='{0}']".format(key)
             result = element.xpath(selector)
             if result:
                 return result[0]
@@ -270,9 +269,3 @@ def weld(DOMTarget, data, pconfig={}):
             debug = 'None'
 
         log.debug(debug)
-
-#def pyquery_weld(data, config={}):
-    #weld(this[0], data, config)
-    #return this
-
-#PyQuery.fn.weld = pyquery_weld
