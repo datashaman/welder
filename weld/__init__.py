@@ -50,9 +50,7 @@ def colorize(val):
     sval = str(val)
 
     if sval in ('False', 'None', '') or val is False:
-        if sval is '':
-            sval = '(empty string)'
-        return color.red + sval + color.gray
+        return color.red + '<' + sval + '>' + color.gray
     else:
         return color.yellow + sval + color.gray
 
@@ -246,7 +244,7 @@ def weld(DOMTarget, data, pconfig={}):
             if result:
                 return result[0]
 
-    config = AttrDict(dict(alias={}, debug=True, insert=False))
+    config = AttrDict(dict(alias={}, debug=False, insert=False))
     config.update(pconfig)
 
     parent = DOMTarget.getparent()
