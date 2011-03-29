@@ -133,7 +133,7 @@ def weld(DOMTarget, data, pconfig={}):
         if value is None or isinstance(value, types.StringTypes) or isinstance(value, etree._Element):
             ops.set(parent, element, key, value)
         else:
-            if isinstance(value, collections.Sequence) and len(value) > 0 and value[0] is not None:
+            if isinstance(value, collections.Sequence):
                 if templateParent is not None:
                     ops.siblings(templateParent, template, key, value)
                 elif has_weld(template):
