@@ -1,10 +1,10 @@
 *.pyc
 *.ini
 
-/distribute-*.tar.gz
-/cover
-/bin
-/lib
-/include
+/.coverage
 /*.egg-info
-.coverage
+/bin
+/cover
+/dist
+/include
+/lib
