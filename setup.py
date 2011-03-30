@@ -36,6 +36,7 @@ setup(name='welder',
       'lxml',
       'pyquery',
       'nose',
-      'coverage'
+      'coverage',
+      'setuptools-git',
   ],
 )
