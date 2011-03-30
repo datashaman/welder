@@ -1,7 +1,7 @@
 import os
 from lxml import etree, cssselect, html
 from pyquery import PyQuery
-from weld import weld
+from welder import weld
 from nose.tools import *
 
 data = (

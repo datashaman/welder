@@ -3,7 +3,7 @@ import sys, os
 
 version = '0.0'
 
-setup(name='weld',
+setup(name='welder',
       version=version,
       description="",
       long_description="""\
@@ -14,7 +14,7 @@ setup(name='weld',
       author_email='',
       url='',
       license='',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['ez_setup', 'examples', 'test']),
       include_package_data=True,
       zip_safe=False,
       install_requires=[
