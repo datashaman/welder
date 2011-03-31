@@ -1,0 +1,7 @@
+[egg_info]
+tag_build = 
+tag_svn_revision = false
+
+[nosetests]
+verbosity = 3
+auto-color = 1

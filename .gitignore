@@ -1,5 +1,6 @@
 *.pyc
 *.ini
+*.cfg
 
 /.coverage
 /*.egg-info
