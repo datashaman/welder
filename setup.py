@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.1.2'
+version = '0.1.4'
 
 setup(name='welder',
   version=version,
@@ -28,7 +28,7 @@ setup(name='welder',
   author_email='marlinf@datashaman.com',
   url='https://github.com/datashaman/welder',
   license='Open Source Initiative OSI - The MIT License',
-  packages=find_packages(exclude=['test']),
+  packages=find_packages(),
   include_package_data=True,
   zip_safe=False,
   install_requires=[
