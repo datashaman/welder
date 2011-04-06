@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import inspect, types
+import inspect, types, collections
 from lxml import etree
 from copy import deepcopy
 import collections, logging
@@ -153,6 +153,12 @@ def weld(DOMTarget, data, pconfig={}):
                     ops.traverse(templateParent, target, index, obj)
                     ops.insert(templateParent, target)
             else:
+                if not hasattr(value, 'items'):
+                    if hasattr(value, '__dict__'):
+                        value = vars(value)
+                    else:
+                        throw Exception('Unrecognized value type "%s" with value "%"' % (value.__class__, value))
+
                 for key, obj in value.items():
                     target = ops.match(template, element, key, obj)
                     if target not in (None, False):
@@ -227,7 +233,7 @@ def weld(DOMTarget, data, pconfig={}):
         if key in config.alias:
             if config.alias[key] is False:
                 return False
-            elif inspect.isfunction(config.alias[key]):
+            elif isinstance(config.alias[key], collections.Callable):
                 func = config.alias[key]
                 result = func(parent, element, key, value)
                 if result is not None:
@@ -249,8 +255,8 @@ def weld(DOMTarget, data, pconfig={}):
 
     parent = DOMTarget.getparent()
 
-    ops = AttrDict(dict(filter(lambda index: inspect.isfunction(index[1]),\
-        locals().items())))
+    ops = AttrDict(dict(filter(lambda index: isinstance(index[1],\
+            collections.Callable), locals().items())))
 
     for name, func in ops.items():
         if name in config and config[name]:
