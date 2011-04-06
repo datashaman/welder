@@ -25,17 +25,6 @@ class AttrDict(dict):
 depth = 0
 welds = {}
 
-def has_weld(element):
-    return id(element) in welds
-
-def get_weld(element):
-    return welds.get(id(element), None)
-
-def set_weld(element, w):
-    global welds
-    welds[id(element)] = w
-    return w
-
 color = AttrDict(dict(gray='\033[37m', darkgray='\033[40;30m', red='\033[31m',\
     green='\033[32m', yellow='\033[33m', lightblue='\033[1;34m',\
     cyan='\033[36m', white='\033[1;37m'))
@@ -82,12 +71,37 @@ def debuggable(name, func=None):
 def weld(DOMTarget, data, pconfig={}):
     assert isinstance(DOMTarget, etree._Element)
 
-    def check_args(parent, element):
-        assert parent is None or isinstance(parent, etree._Element)
-        assert isinstance(element, etree._Element)
+    def has_weld(element):
+        return id(element) in welds
+
+    def get_weld(element):
+        return welds.get(id(element), None)
+
+    def set_weld(element, w):
+        welds[id(element)] = w
+        return w
+
+    def element_type(parent, element, key, value):
+        """Returns input for form elements, image for img tags. Used to
+        decide the strategy in set function"""
+
+        check_args(parent, element, key, value)
+
+        if value is not None and isinstance(value, etree._Element):
+            return 'element'
+
+        if isinstance(element, etree._Element):
+            node_name = element.tag
+
+            if node_name.lower() in ('input', 'select', 'textarea',\
+                    'option', 'button'):
+                return 'input'
+
+            if node_name == 'img':
+                return 'image'
 
     def siblings(parent, element, key, value):
-        check_args(parent, element)
+        check_args(parent, element, key, value)
 
         siblings = parent.getchildren()
         cs = len(siblings)
@@ -125,7 +139,7 @@ def weld(DOMTarget, data, pconfig={}):
                     parent.remove(sibling)
 
     def traverse(parent, element, key, value):
-        check_args(parent, element)
+        check_args(parent, element, key, value)
 
         template = element
         templateParent = element.getparent()
@@ -165,7 +179,7 @@ def weld(DOMTarget, data, pconfig={}):
                         ops.traverse(template, target, key, obj)
 
     def insert(parent, element, key=None, value=None):
-        check_args(parent, element)
+        check_args(parent, element, key, value)
 
         if has_weld(element):
             w = get_weld(element)
@@ -181,41 +195,28 @@ def weld(DOMTarget, data, pconfig={}):
         if None not in (parent, element):
             parent.append(element)
 
-    def element_type(parent, element, key, value):
-        check_args(parent, element)
-
-        if isinstance(element, etree._Element):
-            node_name = element.tag
-
-            if node_name.lower() in ('input', 'select', 'textarea',\
-                    'option', 'button'):
-                return 'input'
-
-            if node_name == 'img':
-                return 'image'
-
     def map(parent, element, key, value):
         return value
 
     def set(parent, element, key, value):
-        check_args(parent, element)
+        check_args(parent, element, key, value)
 
         value = ops.map(parent, element, key, value)
         if value is False:
             return False
-        print value
 
         if config.debug:
             log.debug('- SET: element:%s, key:%s, value:%s' % (element.tag, key, value))
 
         element_type = ops.element_type(parent, element, key, value)
 
-        if value is not None and isinstance(value, etree._Element):
+        if element_type == 'element':
             if value.getparent() is not None:
                 value.getparent().remove(value)
 
             element[:] = []
-            element.text = ''
+            element.text = None
+            element.tail = None
 
             element.append(value)
         elif element_type == 'input':
@@ -223,12 +224,14 @@ def weld(DOMTarget, data, pconfig={}):
         elif element_type == 'image':
             element.set('src', value)
         else:
+            element[:] = []
+            element.tail = None
             element.text = value
 
         return True
 
     def match(parent, element, key, value):
-        check_args(parent, element)
+        check_args(parent, element, key, value)
 
         if key in config.alias:
             if config.alias[key] is False:
@@ -255,8 +258,8 @@ def weld(DOMTarget, data, pconfig={}):
 
     parent = DOMTarget.getparent()
 
-    ops = AttrDict(dict(filter(lambda index: isinstance(index[1],\
-            collections.Callable), locals().items())))
+    ops = AttrDict(filter(lambda index: isinstance(index[1],\
+            collections.Callable), locals().items()))
 
     for name, func in ops.items():
         if name in config and config[name]:
@@ -266,6 +269,10 @@ def weld(DOMTarget, data, pconfig={}):
             func = debuggable(name, func)
 
         ops[name] = func
+
+    def check_args(parent, element, key, value):
+        assert parent is None or isinstance(parent, etree._Element)
+        assert isinstance(element, etree._Element)
 
     ops.traverse(None, DOMTarget, None, data)
 

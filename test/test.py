@@ -220,7 +220,6 @@ def test_internal():
     eq_(template('li.number:nth-child(3) span').text(), 'two')
     eq_(template('li.number').text(), 'zero one two')
 
-
 def test_alias_element():
     """Test 14: Alias may return a dom element which is used instead of doing an explicit match"""
     template = get_template('contacts-alias-opt-out')
@@ -244,3 +243,14 @@ def test_opt_out():
     eq_(template('.contact').length, 2)
     eq_(template('.contact:nth-child(1) .foo').text(), 'My Name')
     eq_(template('.contact:nth-child(2) .foo').text(), 'My Name')
+
+def test_map_return():
+    """Test 16: Map may change value"""
+    template = get_template('contacts')
+
+    weld(template('.contact')[0], data,
+            dict(map=lambda p, e, k, v: 'foobar' if k == 'name' else v))
+
+    eq_(template(".name").length, 2)
+    eq_(template('.name').eq(0).text(), 'foobar')
+    eq_(template('.name').eq(1).text(), 'foobar')
