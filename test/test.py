@@ -152,6 +152,7 @@ def test_array_of_arrays():
 
     def alternative_map(p, e, k, v):
         template(e).addClass('pre-processed')
+        return v
 
     weld(template('.people')[0], data, dict(map=alternative_map))
 

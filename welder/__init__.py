@@ -195,15 +195,15 @@ def weld(DOMTarget, data, pconfig={}):
                 return 'image'
 
     def map(parent, element, key, value):
-        check_args(parent, element)
-
-        return True
+        return value
 
     def set(parent, element, key, value):
         check_args(parent, element)
 
-        if ops.map(parent, element, key, value) is False:
+        value = ops.map(parent, element, key, value)
+        if value is False:
             return False
+        print value
 
         if config.debug:
             log.debug('- SET: element:%s, key:%s, value:%s' % (element.tag, key, value))
