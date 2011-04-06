@@ -157,7 +157,7 @@ def weld(DOMTarget, data, pconfig={}):
                     if hasattr(value, '__dict__'):
                         value = vars(value)
                     else:
-                        throw Exception('Unrecognized value type "%s" with value "%"' % (value.__class__, value))
+                        raise Exception('Unrecognized value type "%s" with value "%"' % (value.__class__, value))
 
                 for key, obj in value.items():
                     target = ops.match(template, element, key, obj)
