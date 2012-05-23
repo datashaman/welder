@@ -166,17 +166,15 @@ def weld(DOMTarget, data, pconfig={}):
 
                     ops.traverse(templateParent, target, index, obj)
                     ops.insert(templateParent, target)
-            else:
-                if not hasattr(value, 'items'):
-                    if hasattr(value, '__dict__'):
-                        value = vars(value)
-                    else:
-                        raise Exception('Unrecognized value type "%s" with value "%"' % (value.__class__, value))
-
+            elif isinstance(value, collections.Mapping):
                 for key, obj in value.items():
                     target = ops.match(template, element, key, obj)
                     if target not in (None, False):
                         ops.traverse(template, target, key, obj)
+            else:
+                # Gross assumption that this is a basic data type
+                # Turn it into unicode since lxml wants that and set it
+                ops.set(parent, element, key, unicode(value))
 
     def insert(parent, element, key=None, value=None):
         check_args(parent, element, key, value)

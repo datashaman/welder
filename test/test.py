@@ -254,3 +254,14 @@ def test_map_return():
     eq_(template(".name").length, 2)
     eq_(template('.name').eq(0).text(), 'foobar')
     eq_(template('.name').eq(1).text(), 'foobar')
+
+def test_numeric_value():
+    """Test 17: Test numeric value"""
+    template = get_template('contacts')
+
+    data = [
+        dict(name=1, job=2)
+    ]
+
+    weld(template('.contact')[0], data)
+    eq_(template('.name').eq(0).text(), '1')
